@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eyüp'ün Ağaç Evi</title>
+<meta name="description" content="Eyüp'ün GitHub projeleri, BMO'ya takılan kasetler olarak. Bir kaset seç, tak ve oyna.">
+<meta name="theme-color" content="#3a2414">
+<meta property="og:title" content="Eyüp'ün Ağaç Evi">
+<meta property="og:description" content="GitHub projelerim kaset oldu. Birini BMO'ya tak!">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='1' width='26' height='30' rx='4' fill='%239fdcc9' stroke='%231e3b3a' stroke-width='2'/%3E%3Crect x='7' y='5' width='18' height='12' rx='1' fill='%23e8f6d2'/%3E%3Ccircle cx='13' cy='10' r='1.3' fill='%231e3b3a'/%3E%3Ccircle cx='19' cy='10' r='1.3' fill='%231e3b3a'/%3E%3Cpath d='M12 13q4 3 8 0' stroke='%231e3b3a' fill='none'/%3E%3Ccircle cx='22' cy='24' r='3' fill='%23ee3f55'/%3E%3Cpath d='M8 23h6M11 20v6' stroke='%23f4d94a' stroke-width='2.5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="asleep">
+
+<div id="world">
+  <svg id="bg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+  <div id="stage">
+    <div id="bmo" aria-label="BMO">
+      <div class="bmo-shadow"></div>
+      <div class="bmo-bob">
+        <svg class="bmo-body" viewBox="-40 0 340 400" aria-hidden="true"></svg>
+        <div id="screen" class="screen">
+          <div class="screen-content" id="screenContent"></div>
+          <div class="screen-glare"></div>
+        </div>
+        <div id="slotGlow" class="slot-glow"></div>
+      </div>
+    </div>
+    <div id="carts" role="list" aria-label="Projeler"></div>
+  </div>
+  <svg id="fg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+  <div class="vignette" aria-hidden="true"></div>
+</div>
+
+<header class="hud">
+  <div class="brand">
+    <h1 id="title">EYÜP'ÜN AĞAÇ EVİ</h1>
+    <p id="subtitle">GitHub portfolyosu</p>
+  </div>
+  <div class="hud-btns">
+    <button id="musicBtn" class="pbtn off" aria-pressed="false" title="Müzik (M)">♫</button>
+    <button id="soundBtn" class="pbtn" aria-pressed="true" title="Ses efektleri">🔊</button>
+  </div>
+</header>
+
+<section id="dialog" class="dialog" aria-live="polite">
+  <span class="dlg-name">BMO</span>
+  <p id="dlgText" class="dlg-text"></p>
+  <p id="dlgHint" class="dlg-hint"></p>
+  <span class="dlg-next" aria-hidden="true">▼</span>
+</section>
+
+<section id="panel" class="panel" aria-hidden="true" role="dialog" aria-labelledby="pTitle">
+  <div class="panel-bar">
+    <span>BMO OS v2.0</span>
+    <span id="pCart">KASET: —</span>
+    <span class="battery" aria-hidden="true"><i></i><i></i><i></i></span>
+  </div>
+  <div class="panel-body">
+    <div class="p-cover"><img id="pImg" alt=""><canvas id="pCanvas" width="96" height="72"></canvas></div>
+    <div class="p-info">
+      <h2 id="pTitle"></h2>
+      <p id="pDesc" class="p-desc"></p>
+      <ul id="pStats" class="p-stats"></ul>
+      <div id="pTopics" class="p-topics"></div>
+      <div class="p-actions">
+        <a id="pRepo" class="act act-a" target="_blank" rel="noopener"><b>A</b> GitHub'da aç</a>
+        <a id="pDemo" class="act act-d" target="_blank" rel="noopener"><b>▶</b> Canlı demo</a>
+        <button id="pEject" class="act act-b"><b>B</b> Kaseti çıkar</button>
+        <button id="pBack" class="act act-x"><b>ESC</b> Odaya dön</button>
+      </div>
+    </div>
+    <article class="p-readme">
+      <h3>README.md</h3>
+      <pre id="pReadme">Yükleniyor…</pre>
+    </article>
+  </div>
+</section>
+
+<noscript><p class="noscript">BMO'nun çalışması için JavaScript gerekiyor.</p></noscript>
+
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/room.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
