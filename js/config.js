@@ -18,6 +18,20 @@ window.CONFIG = {
     // mesai: { stats: [['Kullanıcı', '120'], ['İndirme', '450']] },
   },
 
+  // Altın "Hakkımda" kaseti. Boş bırakılan alanlar GitHub profilinden doldurulur.
+  about: {
+    enabled: true,
+    name: '',                 // boşsa GitHub'daki isim
+    bio: '',                  // boşsa GitHub bio'su
+    text: '',                 // uzun tanıtım yazısı (boşsa profil README'si ya da otomatik metin)
+    skills: [],               // ek yetenekler, ör: ['PWA', 'Arduino'] (diller projelerden otomatik gelir)
+    links: [
+      // { label: 'Instagram', url: 'https://instagram.com/...' },
+      // { label: 'LinkedIn', url: 'https://linkedin.com/in/...' },
+      // { label: 'E-posta', url: 'mailto:...' },
+    ],
+  },
+
   // GitHub API'ye ulaşılamazsa gösterilecek kasetler
   fallback: [
     { name: 'mesai', lang: 'JavaScript', desc: 'Mesai ve çalışma saatleri takibi.' },

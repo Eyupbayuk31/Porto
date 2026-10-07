@@ -77,6 +77,10 @@ window.SFX = (() => {
     },
     zoomIn() { noise(0.6, { vol: 0.06, from: 200, to: 5000, q: 3 }); tone(220, 0.6, { vol: 0.03, slide: 4, type: 'sine' }); },
     zoomOut() { noise(0.5, { vol: 0.05, from: 4000, to: 200, q: 3 }); tone(880, 0.5, { vol: 0.03, slide: 0.25, type: 'sine' }); },
+    boing() { tone(260, 0.3, { type: 'sine', vol: 0.07, slide: 2.4 }); tone(520, 0.12, { type: 'triangle', vol: 0.03, at: 0.05, slide: 1.5 }); },
+    chime(night) {
+      (night ? [84, 79, 76, 72, 67] : [67, 72, 76, 79, 84]).forEach((n, i) => tone(N(n), 0.5, { type: 'triangle', vol: 0.04, at: i * 0.09 }));
+    },
     error() { tone(196, 0.15, { vol: 0.06 }); tone(147, 0.25, { vol: 0.06, at: 0.14 }); },
 
     toggleMusic() {

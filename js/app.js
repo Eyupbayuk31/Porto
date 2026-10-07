@@ -31,10 +31,13 @@
   };
   const langColor = l => (LANG[l] || ['#ee3f55'])[0];
   const langAbbr = (l, n) => (LANG[l] || [0, n.slice(0, 2).toUpperCase()])[1];
+  const colorOf = p => p.color || langColor(p.lang);
 
   /* ================= VERİ ================= */
   async function loadProjects() {
     let list = [];
+    const ab = C.about && C.about.enabled;
+    const profP = ab ? fetch(`https://api.github.com/users/${C.username}`).then(r => r.ok ? r.json() : null).catch(() => null) : null;
     try {
       const r = await fetch(`https://api.github.com/users/${C.username}/repos?per_page=100&sort=pushed`);
       if (!r.ok) throw new Error(r.status);
@@ -51,7 +54,19 @@
       stars: 0, forks: 0, topics: [], demo: '', updated: '', ...p,
       url: `https://github.com/${C.username}/${p.name}`, full: `${C.username}/${p.name}`,
     }));
-    return list.slice(0, C.maxCarts).map(p => ({ ...p, ...(C.overrides[p.name] || {}) }));
+    const out = list.slice(0, C.maxCarts - (ab ? 1 : 0)).map(p => ({ ...p, ...(C.overrides[p.name] || {}) }));
+    if (ab) out.unshift(makeAbout(await profP, out));
+    return out;
+  }
+  function makeAbout(pr, projs) {
+    const a = C.about, u = C.username;
+    return {
+      about: true, name: 'Hakkımda', title: a.name || pr?.name || C.owner, lang: '', color: '#f2c14e',
+      desc: a.bio || pr?.bio || `Merhaba! Ben ${C.owner}. Kod yazmayı ve bir şeyler üretmeyi seviyorum.`,
+      url: pr?.html_url || `https://github.com/${u}`, full: `${u}/${u}`, profile: pr || {},
+      cover: `https://github.com/${u}.png?size=40`, avatar: `https://github.com/${u}.png?size=400`,
+      topics: [...new Set([...projs.map(p => p.lang).filter(Boolean), ...(a.skills || [])])], updated: '',
+    };
   }
 
   /* ================= PİKSEL-ART KAPAK ================= */
@@ -66,7 +81,7 @@
   }
   function drawCover(cv, p, logo = true) {
     const x = cv.getContext('2d'), w = cv.width, h = cv.height, R = rnd(hash(p.name));
-    const hu = hue(langColor(p.lang)), kind = hash(p.name) % 3;
+    const hu = hue(colorOf(p)), kind = hash(p.name) % 3;
     const px = (a, b, c) => { x.fillStyle = c; x.fillRect(a, b, 1, 1); };
     const disc = (cx, cy, r, c) => { for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) if (i * i + j * j <= r * r + r * .6) px(cx + i, cy + j, c); };
     // gökyüzü bantları (dither geçişli)
@@ -98,28 +113,30 @@
     x.font = '16px "Press Start 2P", monospace'; x.textAlign = 'center'; x.textBaseline = 'top';
     const tx = Math.round(w * (kind === 0 ? .32 : .5)), ty = Math.floor(h * .14);
     x.fillStyle = '#1a1020'; [[-1, 0], [1, 0], [0, -1], [0, 1], [2, 2], [3, 3], [1, 2], [2, 1]].forEach(([a, b]) => x.fillText(label, tx + a, ty + b));
-    x.fillStyle = langColor(p.lang); x.fillText(label, tx, ty);
+    x.fillStyle = colorOf(p); x.fillText(label, tx, ty);
     x.fillStyle = 'rgba(255,255,255,.6)'; x.fillRect(tx - 6, ty + 1, 3, 2);
   }
 
   /* ================= KASETLER ================= */
   function makeCart(p, i) {
     const b = document.createElement('button');
-    b.className = 'cart'; b.type = 'button'; b.dataset.i = i;
+    b.className = 'cart' + (p.about ? ' gold' : ''); b.type = 'button'; b.dataset.i = i;
     b.setAttribute('role', 'listitem');
     b.setAttribute('aria-label', `${p.name} kaseti${p.desc ? ': ' + p.desc : ''}`);
-    b.style.setProperty('--c', langColor(p.lang));
+    b.style.setProperty('--c', colorOf(p));
     const cover = p.cover ? `<img src="${esc(p.cover)}" alt="" loading="lazy">` : '<canvas width="64" height="48"></canvas>';
     b.innerHTML = `<span class="c-shadow"></span><span class="c-pos"><span class="c-tilt"><span class="c-body">
       <span class="c-grip"></span>
-      <span class="c-label">${cover}<span class="c-band"><span class="c-ic">${esc(langAbbr(p.lang, p.name))}</span><span class="c-nm">${esc(p.name)}</span></span></span>
+      <span class="c-label">${cover}<span class="c-band"><span class="c-ic">${p.about ? '★' : esc(langAbbr(p.lang, p.name))}</span><span class="c-nm">${esc(p.name)}</span></span></span>
       <span class="c-shine"></span></span></span></span><span class="c-arrow" aria-hidden="true">▼</span>`;
     const cv = b.querySelector('canvas'); if (cv) drawCover(cv, p);
-    b.addEventListener('click', e => { e.stopPropagation(); activate(i); });
+    b.addEventListener('pointerdown', e => dragStart(e, i));
+    b.addEventListener('click', e => { e.stopPropagation(); if (st.justDragged) { st.justDragged = false; return; } activate(i); });
     if (!touch) {
       b.addEventListener('pointerenter', () => { if (st.mode === 'room' && !st.busy && st.sel !== i) select(i, { hover: true }); });
       const tilt = b.querySelector('.c-tilt');
       b.addEventListener('pointermove', e => {
+        if (drag?.on) return;
         const r = tilt.getBoundingClientRect();
         tilt.style.setProperty('--ry', ((e.clientX - r.left) / r.width - .5) * 26 + 'deg');
         tilt.style.setProperty('--rx', -((e.clientY - r.top) / r.height - .5) * 22 + 'deg');
@@ -128,6 +145,51 @@
     }
     return b;
   }
+
+  /* ---- sürükle-bırak: kaseti tutup BMO'ya götür ---- */
+  let drag = null;
+  function dragStart(e, i) {
+    if (e.button !== 0 || st.busy || st.inserted === i || st.mode === 'panel') return;
+    drag = { i, id: e.pointerId, sx: e.clientX, sy: e.clientY, on: false, near: false };
+  }
+  function bmoNear(pt) { const c = local2stage(160, 170); return Math.hypot(pt.x - c.x, pt.y - c.y) < 200 * st.bp.s; }
+  addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const cart = st.carts[drag.i];
+    if (!drag.on) {
+      if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 9) return;
+      if (st.mode === 'asleep') wake(true);
+      if (st.busy) { drag = null; return; }
+      drag.on = true;
+      try { cart.setPointerCapture(e.pointerId); } catch (_) { }
+      cart.classList.add('dragging'); S.lift(); select(drag.i, { quiet: true });
+      if (screenEl.dataset.mode === 'face') setMood('wow');
+    }
+    const pt = client2stage(e.clientX, e.clientY), s = st.pos[drag.i].s * 1.15;
+    drag.pt = { x: pt.x, y: pt.y + 80 * s, s };
+    Object.assign(cart.style, { left: drag.pt.x + 'px', top: drag.pt.y + 'px' });
+    const near = bmoNear(pt);
+    if (near !== drag.near) {
+      drag.near = near; bmo.classList.toggle('want', near);
+      if (near) { S.hover(); if (screenEl.dataset.mode === 'face') setMood('grin', true); }
+      else if (screenEl.dataset.mode === 'face') { face.classList.remove('happy'); setMood('wow'); }
+    }
+  });
+  function dragEnd(e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    if (!d.on) return;
+    st.justDragged = true; setTimeout(() => { st.justDragged = false; }, 350);
+    const cart = st.carts[d.i], home = st.pos[d.i];
+    cart.classList.remove('dragging'); bmo.classList.remove('want'); face.classList.remove('happy');
+    if (d.near && st.mode === 'room' && !st.busy) return insert(d.i, { x: d.pt.x, y: d.pt.y, s: d.pt.s, rot: 0 });
+    cart.classList.add('returning');
+    Object.assign(cart.style, { left: home.x + 'px', top: home.y + 'px' });
+    setTimeout(() => cart.classList.remove('returning'), 420);
+    S.hover(); setMood('smile');
+  }
+  addEventListener('pointerup', dragEnd);
+  addEventListener('pointercancel', dragEnd);
 
   /* ================= YERLEŞİM ================= */
   const SLOTS = [[-.40, .08], [.40, .08], [-.63, .52], [.63, .52], [-.37, .88], [.37, .88], [-.88, .22], [.88, .22], [-.86, .96], [.86, .96]];
@@ -229,11 +291,11 @@
     });
   }
   const HINTS = touch ? {
-    asleep: 'BMO’ya dokun', room: 'Bir kasete dokun · BMO’nun tuşları da çalışır',
+    asleep: 'BMO’ya dokun', room: 'Bir kasete dokun ya da BMO’ya sürükle · pencere: gece/gündüz',
     cart: 'Ekrana ya da yeşil tuşa dokun: içine gir · kırmızı: çıkar', panel: '',
   } : {
     asleep: 'Uyandırmak için tıkla ya da bir tuşa bas',
-    room: '← ↑ ↓ → seç · ENTER tak · M müzik',
+    room: '← ↑ ↓ → seç · ENTER tak · sürükle-bırak · N gece · M müzik',
     cart: 'A / ENTER içine gir · B çıkar · ← → başka kaset',
     panel: '',
   };
@@ -242,6 +304,7 @@
 
   /* ================= SEÇİM ================= */
   function describe(p) {
+    if (p.about) return `Altın kaset! ${C.possessive} hikâyesi bunun içinde.`;
     const l = p.lang ? `${p.lang} ile yapılmış.` : '';
     const d = p.desc ? ` ${p.desc.length > 90 ? p.desc.slice(0, 88) + '…' : p.desc}` : '';
     return `“${p.name}” — ${l}${d}`;
@@ -298,8 +361,8 @@
   }
 
   /* ================= KASET TAKMA ================= */
-  function geom(i) {
-    const p = st.pos[i], slotL = local2stage(80, 184), slotR = local2stage(192, 184);
+  function geom(i, from) {
+    const p = from || st.pos[i], slotL = local2stage(80, 184), slotR = local2stage(192, 184);
     const sw = slotR.x - slotL.x, sf = (sw * .86) / 130;
     return { s0: p.s, rot0: p.rot, dx: (slotL.x + slotR.x) / 2 - p.x, dy: slotL.y - p.y, sf, sink: 160 * sf * .86 };
   }
@@ -328,7 +391,7 @@
     insert(i);
   }
 
-  async function insert(i) {
+  async function insert(i, from) {
     if (st.busy || st.mode !== 'room' || i < 0) return;
     if (st.inserted === i) return enter();
     st.busy = true;
@@ -343,8 +406,9 @@
     fly.style.zIndex = 4000;
     cartsEl.appendChild(fly);
     cart.classList.add('gone');
+    Object.assign(cart.style, { left: st.pos[i].x + 'px', top: st.pos[i].y + 'px' });
     st.fly = { el: fly, i, anim: true };
-    const g = geom(i), inner = fly.querySelector('.c-pos');
+    const g = geom(i, from), inner = fly.querySelector('.c-pos');
     S.lift(); setTimeout(() => S.whoosh(), T(250));
     await fly.animate(flightFrames(g), { duration: T(1000), easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'forwards' }).finished;
     // yuvaya kayarak girme
@@ -354,12 +418,14 @@
     fly.getAnimations({ subtree: true }).forEach(a => a.cancel());
     st.fly.anim = false; placeInserted();
     S.clunk();
+    { const sl = local2stage(136, 184); sparkle(sl.x, sl.y, colorOf(p)); }
     bmo.classList.remove('jolt'); void bmo.offsetWidth; bmo.classList.add('jolt');
     bmo.classList.add('has-cart');
     st.inserted = i;
+    try { history.replaceState(null, '', '#' + encodeURIComponent(p.name)); } catch (_) { }
     // açılış ekranı
     setScreen('boot'); $('#bootTxt').textContent = p.name.toUpperCase().slice(0, 16);
-    screenEl.style.setProperty('--cc', langColor(p.lang));
+    screenEl.style.setProperty('--cc', colorOf(p));
     setTimeout(() => S.boot(), T(150));
     await wait(T(1150));
     renderGame(p);
@@ -369,14 +435,27 @@
     await say(`“${p.name}” yüklendi!` + (p.desc ? ` ${p.desc.length > 80 ? p.desc.slice(0, 78) + '…' : p.desc}` : '') + (touch ? ' Ekrana dokun, içine girelim!' : ' A’ya bas, içine girelim!'));
   }
 
+  function sparkle(x, y, c) {
+    if (reduced) return;
+    for (let k = 0; k < 22; k++) {
+      const d = document.createElement('i'); d.className = 'spark';
+      Object.assign(d.style, { left: x + 'px', top: y + 'px', background: k % 3 ? c : (k % 2 ? '#fff' : '#ffe36e') });
+      cartsEl.appendChild(d);
+      const a = Math.PI * (1.05 + Math.random() * .9), r = (60 + Math.random() * 110) * st.bp.s;
+      d.animate([{ transform: 'translate(-50%,-50%) scale(1.2)', opacity: 1 },
+        { transform: `translate(${Math.cos(a) * r}px,${Math.sin(a) * r}px) rotate(200deg) scale(0)`, opacity: .2 }],
+        { duration: 650 + Math.random() * 450, easing: 'cubic-bezier(.1,.8,.3,1)' }).onfinish = () => d.remove();
+    }
+  }
+
   function renderGame(p) {
     const box = $('#scrGame');
     box.innerHTML = '';
     const cv = document.createElement('canvas'); cv.width = 64; cv.height = 48; cv.className = 'g-bg';
     if (p.cover) { const im = new Image(); im.src = p.cover; im.className = 'g-bg'; box.append(im); } else { drawCover(cv, p, false); box.append(cv); }
-    const t = document.createElement('div'); t.className = 'g-title'; t.textContent = p.name.toUpperCase(); t.style.fontSize = (p.name.length > 13 ? 6 : p.name.length > 9 ? 7.5 : 10) + 'px';
+    const t = document.createElement('div'); t.className = 'g-title'; t.textContent = (p.title || p.name).toUpperCase(); t.style.fontSize = ((p.title || p.name).length > 13 ? 6 : p.name.length > 9 ? 7.5 : 10) + 'px';
     const s = document.createElement('div'); s.className = 'g-start'; s.textContent = touch ? 'DOKUN' : '▶ BAS A';
-    const l = document.createElement('div'); l.className = 'g-lang'; l.textContent = (p.lang || 'PROJE') + (p.stars ? '  ★' + p.stars : '');
+    const l = document.createElement('div'); l.className = 'g-lang'; l.textContent = (p.about ? '★ HAKKIMDA ★' : (p.lang || 'PROJE') + (p.stars ? '  ★' + p.stars : ''));
     box.append(t, l, s);
   }
 
@@ -396,6 +475,7 @@
     back[0].transform = tf(g.dx, g.dy - 30, 360, 0, g.sf);
     await el.animate(back, { duration: T(800), easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'forwards' }).finished;
     el.remove(); st.fly = null; st.inserted = -1;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) { }
     st.carts[i].classList.remove('gone');
     S.hover();
     hint('room'); setMood('smile');
@@ -411,17 +491,30 @@
   }
   function fillPanel(p) {
     $('#pCart').textContent = 'KASET: ' + p.name.toUpperCase();
-    $('#pTitle').textContent = p.name;
+    $('#pTitle').textContent = p.title || p.name;
     $('#pDesc').textContent = p.desc || 'Bu kasetin henüz bir açıklaması yok. Ama BMO yine de çok sevdi!';
+    $('#pReadmeH').textContent = p.about ? 'HAKKIMDA.md' : 'README.md';
+    $('#pRepo').innerHTML = p.about ? '<b>A</b> GitHub profilim' : '<b>A</b> GitHub\'da aç';
+    $('#pShare').innerHTML = '<b>⇪</b> Linki kopyala';
+    $('#pLinks').innerHTML = (p.about ? (C.about.links || []) : []).map(l => `<a class="act act-l" href="${esc(l.url)}" target="_blank" rel="noopener"><b>↗</b> ${esc(l.label)}</a>`).join('');
+    document.querySelector('.p-cover').classList.toggle('avatar', !!p.about);
     // Sıfır olan GitHub sayıları gösterilmez; config'teki gerçek ek istatistikler (ör. kullanıcı sayısı) eklenir.
     const score = 3 + hash(p.name) % 3;
-    const stats = [['Dil', p.lang ? `<i class="dot" style="background:${langColor(p.lang)}"></i>${esc(p.lang)}` : '—'], ['Son güncelleme', relDate(p.updated)]];
+    let stats = [['Dil', p.lang ? `<i class="dot" style="background:${langColor(p.lang)}"></i>${esc(p.lang)}` : '—'], ['Son güncelleme', relDate(p.updated)]];
+    if (p.about) {
+      const pr = p.profile; stats = [];
+      if (pr.location) stats.push(['Konum', '⌂ ' + esc(pr.location)]);
+      stats.push(['Açık proje', '▣ ' + (pr.public_repos ?? st.projects.length - 1)]);
+      if (pr.followers) stats.push(['Takipçi', '♥ ' + pr.followers]);
+      if (pr.created_at) stats.push(['GitHub’da', new Date(pr.created_at).getFullYear() + '’den beri']);
+      if (stats.length % 2) stats.push(['Favori konsol', 'BMO ♥']);
+    }
     if (p.stars) stats.push(['Yıldız', '★ ' + p.stars]);
     if (p.forks) stats.push(['Fork', '⑂ ' + p.forks]);
     (p.stats || []).forEach(([k, v]) => stats.push([esc(k), esc(v)]));
-    if (stats.length % 2) stats.push(['BMO puanı', '<span class="bmo-score">' + '★'.repeat(score) + '☆'.repeat(5 - score) + '</span>']);
+    if (stats.length % 2 && !p.about) stats.push(['BMO puanı', '<span class="bmo-score">' + '★'.repeat(score) + '☆'.repeat(5 - score) + '</span>']);
     $('#pStats').innerHTML = stats.map(([k, v]) => `<li><span>${k}</span><b>${v}</b></li>`).join('');
-    $('#pTopics').innerHTML = (p.topics || []).map(t => `<span>#${esc(t)}</span>`).join('');
+    $('#pTopics').innerHTML = (p.topics || []).map(t => `<span>${p.about ? '' : '#'}${esc(t)}</span>`).join('');
     const repo = $('#pRepo'); repo.href = p.url;
     const demo = $('#pDemo');
     if (p.demo) { demo.href = /^https?:/.test(p.demo) ? p.demo : 'https://' + p.demo; demo.hidden = false; } else demo.hidden = true;
@@ -429,14 +522,18 @@
     drawCover(cv, p); cv.hidden = false; img.hidden = true;
     img.onload = () => { img.hidden = false; cv.hidden = true; };
     img.onerror = () => { img.hidden = true; cv.hidden = false; };
-    img.src = p.cover || `https://opengraph.githubassets.com/bmo/${p.full}`;
+    img.src = p.about ? p.avatar : (p.cover || `https://opengraph.githubassets.com/bmo/${p.full}`);
     loadReadme(p);
   }
   async function loadReadme(p) {
     const pre = $('#pReadme');
+    if (p.about && C.about.text) { pre.textContent = C.about.text; return; }
     if (st.readme[p.full] != null) { pre.textContent = st.readme[p.full]; return; }
     pre.textContent = 'Yükleniyor…';
-    let txt = 'README bulunamadı.';
+    const langs = p.about ? p.topics.slice(0, 4).join(', ') : '';
+    let txt = p.about
+      ? `Merhaba! Ben ${C.owner}.\n\nBu ağaç evine ${st.projects.length - 1} projemi kaset olarak koydum${langs ? `; en çok ${langs} ile çalışıyorum` : ''}.\n\nBir kaset seç, BMO'ya tak ve içine gir. İyi eğlenceler!`
+      : 'README bulunamadı.';
     try {
       const r = await fetch(`https://api.github.com/repos/${p.full}/readme`, { headers: { Accept: 'application/vnd.github.raw+json' } });
       if (r.ok) {
@@ -447,9 +544,9 @@
         if (txt.length > 2400) txt = txt.slice(0, 2400) + '\n…';
         if (!txt) txt = 'README boş.';
       }
-    } catch (e) { txt = 'README yüklenemedi (bağlantı yok).'; }
+    } catch (e) { if (!p.about) txt = 'README yüklenemedi (bağlantı yok).'; }
     st.readme[p.full] = txt;
-    if ($('#pTitle').textContent === p.name) pre.textContent = txt;
+    if ($('#pTitle').textContent === (p.title || p.name)) pre.textContent = txt;
   }
 
   // Ekrana "dalma": sahne hafifçe büyürken BMO'nun ekranı tüm görüntüyü kaplayacak şekilde genişler.
@@ -496,6 +593,43 @@
     st.carts[st.sel]?.focus({ preventScroll: true });
   }
 
+  /* ================= GECE / GÜNDÜZ ================= */
+  function setNight(v, talk) {
+    st.night = v; document.body.classList.toggle('night', v);
+    if (talk) {
+      S.chime(v);
+      say(v ? pickOne(['Gece oldu… Ateş böceklerine bak!', 'Yıldızlar çıktı! Ampuller de parlıyor.']) : pickOne(['Günaydın! Güneş doğdu.', 'Gündüz oldu, hadi çalışalım!']), { after: 'grin' });
+    }
+  }
+
+  /* ================= ODA EŞYALARI ================= */
+  const HOT = {
+    shelf: ['Bu kitapların hepsini okudum. Tamam, sadece resimlerine baktım.', `${C.possessive} kitaplığı! Kodlama kitapları en üst rafta.`, 'Kitapları karıştırma, sonra yerini bulamıyorum!'],
+    sword: ['Bu kılıç çok tehlikeli! …Şaka, tahtadan.', 'Kılıç sallamak yerine kod yazmayı tercih ederim.'],
+    picture: ['Bu tabloyu ben çizdim! …Pekala, ben çizmedim.', 'Ne güzel bir manzara. Bir gün oraya gidelim.'],
+    plant: ['Bitkiye su verdim! Büyü küçük bitki, büyü!', 'Bu bitkinin adı Bitki. Yaratıcı, değil mi?'],
+    pouf: ['Burası benim şekerleme köşem. Zzz…', 'Yumuşacık! Ama kasetler daha eğlenceli.'],
+  };
+  $('#bg').addEventListener('click', e => {
+    const h = e.target.closest('.hot'); if (!h) return;
+    e.stopPropagation(); st.lastInput = performance.now();
+    if (st.mode === 'asleep') return wake();
+    if (st.mode !== 'room') return;
+    h.classList.remove('poke'); void h.getBoundingClientRect(); h.classList.add('poke');
+    setTimeout(() => h.classList.remove('poke'), 700);
+    const k = h.dataset.hot;
+    if (k === 'window') return setNight(!st.night, true);
+    S.boing();
+    if (!st.busy) say(pickOne(HOT[k]), { after: 'grin' });
+  });
+
+  $('#pShare').addEventListener('click', async () => {
+    const p = st.projects[st.inserted]; if (!p) return;
+    const url = location.origin + location.pathname + '#' + encodeURIComponent(p.name);
+    try { await navigator.clipboard.writeText(url); $('#pShare').innerHTML = '<b>✓</b> Kopyalandı!'; }
+    catch (_) { prompt('Linki kopyala:', url); }
+  });
+
   /* ================= GİRDİLER ================= */
   function press(act) {
     const el = bmo.querySelector(`.ctl[data-act="${act}"]`);
@@ -523,6 +657,7 @@
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (k === 'm') { toggleMusic(); return; }
+    if (k === 'n' && st.mode !== 'panel') { if (st.mode === 'asleep') wake(true); setNight(!st.night, true); return; }
     if (st.mode === 'asleep') { e.preventDefault(); wake(); return; }
     if (st.mode === 'panel') {
       if (k === 'Escape' || k === 'Backspace') { e.preventDefault(); exitPanel(); }
@@ -556,7 +691,7 @@
 
   /* ================= ANİMASYON DÖNGÜSÜ ================= */
   const far = () => document.getElementById('far'), front = () => document.getElementById('front'), lights = () => document.getElementById('lights');
-  const IDLE = ['Psst… kasetlerin üstüne gelince eğiliyorlar, fark ettin mi?', 'Sıkıldım… Hadi bir kaset tak!', 'M tuşuna basarsan müzik çalarım!',
+  const IDLE = ['Kaseti tutup bana sürükleyebilirsin, biliyor muydun?', 'Pencereye tıkla, gece olsun!', 'Odadaki eşyalara tıklamayı dene!', 'Altın kaseti gördün mü? Çok özel o!', 'Psst… kasetlerin üstüne gelince eğiliyorlar, fark ettin mi?', 'Sıkıldım… Hadi bir kaset tak!', 'M tuşuna basarsan müzik çalarım!',
     'Ok tuşlarıyla kasetler arasında gezebilirsin.', 'Biliyor musun? Ben de bir oyun konsoluyum!', 'Bip bop. Kasetler beni bekliyor…'];
   function loop(now) {
     // göz takibi
@@ -594,6 +729,7 @@
     $('#title').textContent = C.title;
     $('#subtitle').innerHTML = `GitHub portfolyosu · <a href="https://github.com/${esc(C.username)}" target="_blank" rel="noopener">@${esc(C.username)}</a>`;
     Room.build();
+    { const h = new Date().getHours(); setNight(h >= 19 || h < 7, false); }
     setScreen('off');
     hint('asleep');
     say('Zzz… BMO uyuyor. (Uyandırmak için tıkla ya da bir tuşa bas)', { talk: false, speed: 30 });
@@ -607,6 +743,16 @@
     setTimeout(() => st.carts.forEach(c => { c.style.transitionDelay = ''; }), 2000);
     layout();
     document.body.classList.add('loaded');
+    // paylaşılan link: #proje-adi → o kaseti takılı aç
+    const want = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+    const wi = want ? st.projects.findIndex(p => p.name.toLowerCase() === want) : -1;
+    if (wi >= 0) {
+      await wait(T(900));
+      await wake(true);
+      say('Bu kaseti senin için hazırladım!', { after: 'grin' });
+      await wait(T(700));
+      insert(wi);
+    }
   }
   init();
 })();

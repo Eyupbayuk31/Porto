@@ -52,17 +52,21 @@ window.Room = (() => {
   function windowEl() {
     const cx = 330, cy = 250, r = 92;
     return `
-    <g id="window">
+    <g id="window" class="hot" data-hot="window">
       <circle cx="${cx + 6}" cy="${cy + 8}" r="${r + 6}" fill="#000" opacity=".18"/>
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="#8a5530" stroke="${O}" stroke-width="6"/>
       <g clip-path="url(#winClip)">
         <rect x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" fill="url(#sky)"/>
         <g class="cloud"><ellipse cx="${cx - 30}" cy="${cy - 40}" rx="30" ry="11" fill="#fff"/><ellipse cx="${cx - 12}" cy="${cy - 48}" rx="18" ry="12" fill="#fff"/></g>
+        <g class="night-only"><rect x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" fill="url(#nightSky)"/>
+          ${Array.from({ length: 22 }, () => `<circle class="star" cx="${r1(cx - 80 + R() * 160)}" cy="${r1(cy - 80 + R() * 110)}" r="${r1(.8 + R() * 1.4)}" fill="#fff" style="--d:${(R() * 3).toFixed(2)}s"/>`).join('')}
+          <circle cx="${cx + 36}" cy="${cy - 36}" r="17" fill="#fff6c8"/><circle cx="${cx + 44}" cy="${cy - 42}" r="15" fill="#22305e"/></g>
         <path d="M${cx - 90} ${cy + 40} Q${cx - 30} ${cy + 5} ${cx + 30} ${cy + 30} T${cx + 100} ${cy + 20} V${cy + 100} H${cx - 100} Z" fill="#8fd17a" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx - 55}" cy="${cy + 52}" r="26" fill="#5aa04f" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx - 25}" cy="${cy + 64}" r="22" fill="#6db85a" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx + 48}" cy="${cy + 58}" r="28" fill="#4f9a45" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx + 18}" cy="${cy + 72}" r="20" fill="#78bf5e" stroke="${O}" stroke-width="3"/>
+        <g class="night-only">${Array.from({ length: 7 }, () => `<circle class="firefly" cx="${r1(cx - 60 + R() * 120)}" cy="${r1(cy + 20 + R() * 50)}" r="2.2" fill="#eaff7a" style="--d:${(R() * 4).toFixed(2)}s"/>`).join('')}</g>
         <rect x="${cx - 6}" y="${cy - r}" width="12" height="${2 * r}" fill="#8a5530" stroke="${O}" stroke-width="4"/>
         <rect x="${cx - r}" y="${cy - 6}" width="${2 * r}" height="12" fill="#8a5530" stroke="${O}" stroke-width="4"/>
         <path d="M${cx - 50} ${cy - 60} L${cx - 20} ${cy - 30}" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".55"/>
@@ -73,7 +77,7 @@ window.Room = (() => {
 
   function bookshelf() {
     const x0 = 600, x1 = 1000, y0 = 72, rows = [138, 204, 270];
-    let s = `<rect x="${x0 + 8}" y="${y0 + 10}" width="${x1 - x0}" height="${rows[2] - y0 + 14}" fill="#000" opacity=".18"/>`;
+    let s = `<g id="shelf" class="hot" data-hot="shelf"><rect x="${x0 + 8}" y="${y0 + 10}" width="${x1 - x0}" height="${rows[2] - y0 + 14}" fill="#000" opacity=".18"/>`;
     s += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${rows[2] - y0 + 12}" fill="#7d4a28" stroke="${O}" stroke-width="6" rx="4"/>`;
     s += `<rect x="${x0 + 14}" y="${y0 + 12}" width="${x1 - x0 - 28}" height="${rows[2] - y0 - 10}" fill="#4f2e1a"/>`;
     const cols = ['#d9534f', '#5b8def', '#f2c14e', '#7bc47f', '#9b6fd1', '#e8884a', '#4fb3bf', '#e05d8e', '#efe2c0', '#3f6f9e'];
@@ -92,27 +96,27 @@ window.Room = (() => {
     // raf üstü süsler: saksı + kupa
     s += `<path d="M640 72 L648 46 H676 L684 72 Z" fill="#c4623a" stroke="${O}" stroke-width="4"/>
       <path d="M662 46 C640 20 630 10 618 14 M662 46 C664 18 672 4 684 0 M662 46 C680 28 700 26 708 32" fill="none" stroke="#4f9a45" stroke-width="7" stroke-linecap="round"/>
-      <path d="M940 72 V64 H956 V54 C940 52 936 30 940 24 H976 C980 30 976 52 960 54 V64 H976 V72 Z" fill="#f2c14e" stroke="${O}" stroke-width="4"/>`;
+      <path d="M940 72 V64 H956 V54 C940 52 936 30 940 24 H976 C980 30 976 52 960 54 V64 H976 V72 Z" fill="#f2c14e" stroke="${O}" stroke-width="4"/></g>`;
     return s;
   }
 
   function wallDecor() {
     // çerçeveli resim
     const fx = 1150, fy = 120;
-    let s = `<rect x="${fx + 6}" y="${fy + 8}" width="160" height="122" fill="#000" opacity=".18"/>
+    let s = `<g id="picture" class="hot" data-hot="picture"><rect x="${fx + 6}" y="${fy + 8}" width="160" height="122" fill="#000" opacity=".18"/>
       <rect x="${fx}" y="${fy}" width="160" height="122" fill="#8a5530" stroke="${O}" stroke-width="5" rx="3"/>
       <rect x="${fx + 14}" y="${fy + 14}" width="132" height="94" fill="#ffd99a" stroke="${O}" stroke-width="3"/>
       <circle cx="${fx + 108}" cy="${fy + 42}" r="13" fill="#ff9f4a"/>
       <path d="M${fx + 14} ${fy + 90} Q${fx + 50} ${fy + 50} ${fx + 90} ${fy + 82} T${fx + 146} ${fy + 74} V${fy + 108} H${fx + 14} Z" fill="#7cc06a" stroke="${O}" stroke-width="3"/>
       <path d="M${fx + 40} ${fy + 108} L${fx + 40} ${fy + 86} L${fx + 52} ${fy + 76} L${fx + 64} ${fy + 86} V${fy + 108}" fill="#e8884a" stroke="${O}" stroke-width="2.5"/>
-      <line x1="${fx + 80}" y1="${fy}" x2="${fx + 80}" y2="${fy - 26}" stroke="${O}" stroke-width="3"/>`;
+      <line x1="${fx + 80}" y1="${fy}" x2="${fx + 80}" y2="${fy - 26}" stroke="${O}" stroke-width="3"/></g>`;
     // tahta kılıç
-    s += `<g transform="rotate(-28 520 220)">
+    s += `<g id="sword" class="hot" data-hot="sword"><g transform="rotate(-28 520 220)">
       <path d="M512 70 L528 70 L530 300 L520 318 L510 300 Z" fill="#d8b98a" stroke="${O}" stroke-width="4" stroke-linejoin="round"/>
       <line x1="520" y1="80" x2="520" y2="296" stroke="#b08a5a" stroke-width="3"/>
       <rect x="490" y="300" width="60" height="12" rx="4" fill="#f2c14e" stroke="${O}" stroke-width="4"/>
       <rect x="512" y="312" width="16" height="40" rx="3" fill="#7a3f22" stroke="${O}" stroke-width="4"/>
-      <circle cx="520" cy="358" r="8" fill="#f2c14e" stroke="${O}" stroke-width="4"/></g>`;
+      <circle cx="520" cy="358" r="8" fill="#f2c14e" stroke="${O}" stroke-width="4"/></g></g>`;
     // sağ duvarda küçük raf + kutular
     s += `<rect x="1360" y="300" width="150" height="10" fill="#9a6036" stroke="${O}" stroke-width="4"/>
       <rect x="1372" y="262" width="34" height="38" fill="#5b8def" stroke="${O}" stroke-width="4" rx="2"/>
@@ -181,7 +185,7 @@ window.Room = (() => {
 
   function pouf() {
     const cx = 1300, cy = 562, rx = 190, ry = 50, h = 56;
-    return `<g id="pouf">
+    return `<g id="pouf" class="hot" data-hot="pouf">
       <ellipse cx="${cx + 10}" cy="${cy + h + 10}" rx="${rx + 10}" ry="${ry - 8}" fill="#000" opacity=".2"/>
       <path d="M${cx - rx} ${cy} V${cy + h} A${rx} ${ry} 0 0 0 ${cx + rx} ${cy + h} V${cy} Z" fill="#a3ac38" stroke="${O}" stroke-width="5"/>
       <path d="M${cx - rx + 30} ${cy + 30} V${cy + h + 22} M${cx - 60} ${cy + 48} V${cy + h + 46} M${cx + 60} ${cy + 48} V${cy + h + 46} M${cx + rx - 30} ${cy + 30} V${cy + h + 22}" stroke="#7f8829" stroke-width="3"/>
@@ -197,7 +201,7 @@ window.Room = (() => {
   }
 
   function plant() {
-    return `<g id="plant">
+    return `<g id="plant" class="hot" data-hot="plant">
       <ellipse cx="180" cy="552" rx="54" ry="12" fill="#000" opacity=".2"/>
       <path d="M118 400 C80 360 70 330 84 312 C110 330 128 370 132 420 Z" fill="#5aa04f" stroke="${O}" stroke-width="4"/>
       <path d="M160 410 C150 340 166 290 196 270 C208 320 196 370 176 420 Z" fill="#78bf5e" stroke="${O}" stroke-width="4"/>
@@ -224,6 +228,8 @@ window.Room = (() => {
       <linearGradient id="wallShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a140a" stop-opacity=".45"/><stop offset=".45" stop-color="#2a140a" stop-opacity=".08"/><stop offset="1" stop-color="#2a140a" stop-opacity=".3"/></linearGradient>
       <linearGradient id="floorShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e0e05" stop-opacity=".5"/><stop offset=".35" stop-color="#1e0e05" stop-opacity=".05"/><stop offset="1" stop-color="#1e0e05" stop-opacity=".25"/></linearGradient>
       <linearGradient id="beam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6d0" stop-opacity=".42"/><stop offset="1" stop-color="#fff6d0" stop-opacity="0"/></linearGradient>
+      <linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101a3d"/><stop offset="1" stop-color="#2b3f7a"/></linearGradient>
+      <linearGradient id="moonbeam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#bcd4ff" stop-opacity=".28"/><stop offset="1" stop-color="#bcd4ff" stop-opacity="0"/></linearGradient>
       <radialGradient id="warm" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#ffd27a" stop-opacity=".22"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
       <clipPath id="winClip"><circle cx="330" cy="250" r="74"/></clipPath>
       <clipPath id="floorClip"><rect x="-60" y="${HZ}" width="1720" height="520"/></clipPath>
