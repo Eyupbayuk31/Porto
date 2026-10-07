@@ -17,7 +17,9 @@
 <body class="asleep">
 
 <div id="world">
-  <svg id="bg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+  <svg id="bgFar" class="layer" viewBox="0 0 1600 1000" aria-hidden="true"></svg>
+  <svg id="bgMid" class="layer" viewBox="0 0 1600 1000" aria-hidden="true"></svg>
+  <div id="fx" class="plane" aria-hidden="true"><div id="fxIn"></div></div>
   <div id="stage">
     <div id="bmo" aria-label="BMO">
       <div class="bmo-shadow"></div>
@@ -32,7 +34,9 @@
     </div>
     <div id="carts" role="list" aria-label="Projeler"></div>
   </div>
-  <svg id="fg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+  <svg id="fg" class="layer" viewBox="0 0 1600 1000" aria-hidden="true"></svg>
+  <div class="nightshade" aria-hidden="true"></div>
+  <div id="lights" class="plane" aria-hidden="true"><div id="lightsIn"></div></div>
   <div class="vignette" aria-hidden="true"></div>
 </div>
 

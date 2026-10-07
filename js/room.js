@@ -44,8 +44,10 @@ window.Room = (() => {
       s += `<path d="M${-60 + o * .4} ${500 - o * .2} C${60 + o} ${380 - o * .3} ${170 + o * .8} ${250 - o * .5} ${260 + o * .6} ${90 - o * .4}" fill="none" stroke="#7a4626" stroke-width="${i % 2 ? 2 : 3}" stroke-linecap="round" stroke-dasharray="${40 + i * 7} ${18 + i * 3}"/>`;
     }
     // tavan kirişi
-    s += `<path d="M-40 -20 H1640 V58 C1400 70 1200 52 1000 64 C760 78 500 56 300 70 C150 80 40 62 -40 72 Z" fill="#6e3f22" stroke="${O}" stroke-width="6"/>`;
+    s += `<path d="M-40 -900 H1640 V58 C1400 70 1200 52 1000 64 C760 78 500 56 300 70 C150 80 40 62 -40 72 Z" fill="#6e3f22" stroke="${O}" stroke-width="6"/>`;
     s += `<path d="M-20 30 C300 40 600 24 900 36 C1200 46 1450 28 1640 38" fill="none" stroke="#54301a" stroke-width="3" stroke-dasharray="60 30"/>`;
+    // tavan kirişleri (telefonda görünen üst kısım)
+    for (let y = -40; y > -900; y -= 70) s += `<path d="M-40 ${y} H1640" stroke="#54301a" stroke-width="5"/><path d="M-40 ${y - 30} C400 ${y - 22} 1000 ${y - 38} 1640 ${y - 28}" stroke="#7a4a2a" stroke-width="2" fill="none" stroke-dasharray="80 40"/>`;
     return s;
   }
 
@@ -57,16 +59,15 @@ window.Room = (() => {
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="#8a5530" stroke="${O}" stroke-width="6"/>
       <g clip-path="url(#winClip)">
         <rect x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" fill="url(#sky)"/>
-        <g class="cloud"><ellipse cx="${cx - 30}" cy="${cy - 40}" rx="30" ry="11" fill="#fff"/><ellipse cx="${cx - 12}" cy="${cy - 48}" rx="18" ry="12" fill="#fff"/></g>
+        <g><ellipse cx="${cx - 30}" cy="${cy - 40}" rx="30" ry="11" fill="#fff"/><ellipse cx="${cx - 12}" cy="${cy - 48}" rx="18" ry="12" fill="#fff"/></g>
         <g class="night-only"><rect x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" fill="url(#nightSky)"/>
-          ${Array.from({ length: 22 }, () => `<circle class="star" cx="${r1(cx - 80 + R() * 160)}" cy="${r1(cy - 80 + R() * 110)}" r="${r1(.8 + R() * 1.4)}" fill="#fff" style="--d:${(R() * 3).toFixed(2)}s"/>`).join('')}
+          ${Array.from({ length: 22 }, () => `<circle cx="${r1(cx - 80 + R() * 160)}" cy="${r1(cy - 80 + R() * 110)}" r="${r1(.8 + R() * 1.4)}" fill="#fff" style="--d:${(R() * 3).toFixed(2)}s"/>`).join('')}
           <circle cx="${cx + 36}" cy="${cy - 36}" r="17" fill="#fff6c8"/><circle cx="${cx + 44}" cy="${cy - 42}" r="15" fill="#22305e"/></g>
         <path d="M${cx - 90} ${cy + 40} Q${cx - 30} ${cy + 5} ${cx + 30} ${cy + 30} T${cx + 100} ${cy + 20} V${cy + 100} H${cx - 100} Z" fill="#8fd17a" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx - 55}" cy="${cy + 52}" r="26" fill="#5aa04f" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx - 25}" cy="${cy + 64}" r="22" fill="#6db85a" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx + 48}" cy="${cy + 58}" r="28" fill="#4f9a45" stroke="${O}" stroke-width="3"/>
         <circle cx="${cx + 18}" cy="${cy + 72}" r="20" fill="#78bf5e" stroke="${O}" stroke-width="3"/>
-        <g class="night-only">${Array.from({ length: 7 }, () => `<circle class="firefly" cx="${r1(cx - 60 + R() * 120)}" cy="${r1(cy + 20 + R() * 50)}" r="2.2" fill="#eaff7a" style="--d:${(R() * 4).toFixed(2)}s"/>`).join('')}</g>
         <rect x="${cx - 6}" y="${cy - r}" width="12" height="${2 * r}" fill="#8a5530" stroke="${O}" stroke-width="4"/>
         <rect x="${cx - r}" y="${cy - 6}" width="${2 * r}" height="12" fill="#8a5530" stroke="${O}" stroke-width="4"/>
         <path d="M${cx - 50} ${cy - 60} L${cx - 20} ${cy - 30}" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".55"/>
@@ -125,6 +126,7 @@ window.Room = (() => {
     return s;
   }
 
+  const bulbs = [];
   function fairyLights() {
     let s = '';
     const cols = ['#ffd36e', '#ff8fb1', '#8ff0e0', '#ffd36e', '#c6a8ff'];
@@ -138,7 +140,7 @@ window.Room = (() => {
         const x = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * mx + t * t * x2;
         const y = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * (my + sag) + t * t * y2;
         const c = cols[n % cols.length];
-        s += `<g class="bulb" style="--d:${(R() * 3).toFixed(2)}s"><circle cx="${r1(x)}" cy="${r1(y + 9)}" r="16" fill="${c}" opacity=".35" filter="url(#glow)"/><rect x="${r1(x - 3)}" y="${r1(y)}" width="6" height="5" fill="#2a1a0f"/><ellipse cx="${r1(x)}" cy="${r1(y + 10)}" rx="5" ry="7" fill="${c}" stroke="${O}" stroke-width="2"/></g>`;
+        bulbs.push({ x: r1(x), y: r1(y), c, d: (R() * 3).toFixed(2) });
         n++;
       }
     });
@@ -147,25 +149,26 @@ window.Room = (() => {
 
   /* ---------- ZEMİN ---------- */
   const seamX = (xb, y) => VP.x + (xb - VP.x) * ((y - VP.y) / (1000 - VP.y));
+  const FB = 2700;
   function floor() {
     let s = '<g clip-path="url(#floorClip)">';
     const tones = ['#b8804c', '#ad7643', '#be8753', '#b27b47'];
     const step = 118;
     for (let xb = -2800, i = 0; xb < 4400; xb += step, i++) {
       const a1 = seamX(xb, HZ), a2 = seamX(xb + step, HZ);
-      s += `<polygon points="${r1(a1)},${HZ} ${r1(a2)},${HZ} ${xb + step},1000 ${xb},1000" fill="${tones[i % tones.length]}"/>`;
+      s += `<polygon points="${r1(a1)},${HZ} ${r1(a2)},${HZ} ${r1(seamX(xb + step, FB))},${FB} ${r1(seamX(xb, FB))},${FB}" fill="${tones[i % tones.length]}"/>`;
       // ek yerleri
-      const joints = 1 + Math.floor(R() * 2);
+      const joints = 3 + Math.floor(R() * 3);
       for (let k = 0; k < joints; k++) {
-        const y = HZ + 20 + R() * 440;
+        const y = HZ + 20 + (k < 2 ? R() * 440 : 460 + R() * (FB - 1000));
         s += `<line x1="${r1(seamX(xb, y))}" y1="${r1(y)}" x2="${r1(seamX(xb + step, y))}" y2="${r1(y)}" stroke="${O}" stroke-width="3" opacity=".8"/>`;
       }
       // damar
       const g = xb + step * (.3 + R() * .4);
-      s += `<line x1="${r1(seamX(g, HZ))}" y1="${HZ}" x2="${r1(g)}" y2="1000" stroke="#8a5530" stroke-width="2" opacity=".35" stroke-dasharray="${30 + R() * 50} ${20 + R() * 40}"/>`;
-      s += `<line x1="${r1(a1)}" y1="${HZ}" x2="${xb}" y2="1000" stroke="${O}" stroke-width="3.5"/>`;
+      s += `<line x1="${r1(seamX(g, HZ))}" y1="${HZ}" x2="${r1(seamX(g, FB))}" y2="${FB}" stroke="#8a5530" stroke-width="2" opacity=".35" stroke-dasharray="${30 + R() * 50} ${20 + R() * 40}"/>`;
+      s += `<line x1="${r1(a1)}" y1="${HZ}" x2="${r1(seamX(xb, FB))}" y2="${FB}" stroke="${O}" stroke-width="3.5"/>`;
     }
-    s += `<rect x="-60" y="${HZ}" width="1720" height="500" fill="url(#floorShade)"/>`;
+    s += `<rect x="-2000" y="${HZ}" width="5600" height="460" fill="url(#floorShade)"/>`;
     s += '</g>';
     // süpürgelik
     s += `<rect x="-60" y="${HZ - 16}" width="1720" height="22" fill="#7a4728" stroke="${O}" stroke-width="5"/>`;
@@ -212,14 +215,20 @@ window.Room = (() => {
     </g>`;
   }
 
-  function lightBeam() {
-    let s = `<polygon class="beam" points="300,300 400,268 1010,860 600,960" fill="url(#beam)"/>`;
-    for (let i = 0; i < 26; i++) {
-      const t = R(), u = R();
-      const x = 330 + t * 480 + u * 120, y = 300 + t * 560 + (u - .5) * 60;
-      s += `<circle class="mote" cx="${r1(x)}" cy="${r1(y)}" r="${r1(1.4 + R() * 2.2)}" style="--d:${(R() * 8).toFixed(2)}s;--t:${(6 + R() * 6).toFixed(2)}s"/>`;
+  // ışık huzmesi, toz zerrecikleri ve gece ateş böcekleri: GPU ile oynatılan hafif HTML katmanı
+  function effects() {
+    let h = '<div class="beam"></div>';
+    for (let i = 0; i < 22; i++) {
+      const t = R(), u = R(), z = r1(3 + R() * 4);
+      h += `<i class="mote" style="left:${r1(330 + t * 480 + u * 120)}px;top:${r1(300 + t * 560 + (u - .5) * 60)}px;width:${z}px;height:${z}px;--d:${(R() * 8).toFixed(2)}s;--t:${(6 + R() * 6).toFixed(2)}s"></i>`;
     }
-    return s;
+    for (let i = 0; i < 16; i++) {
+      h += `<i class="ffly" style="left:${r1(180 + R() * 1240)}px;top:${r1(280 + R() * 560)}px;--d:${(R() * 6).toFixed(2)}s;--t:${(7 + R() * 6).toFixed(2)}s;--x:${r1((R() - .5) * 140)}px;--y:${r1((R() - .5) * 90)}px"></i>`;
+    }
+    return h;
+  }
+  function bulbsHTML() {
+    return bulbs.map(b => `<span class="bulb" style="left:${b.x}px;top:${b.y}px;--c:${b.c};--d:${b.d}s"><i class="glow"></i><i class="cap"></i><i class="lamp"></i></span>`).join('');
   }
 
   function defs() {
@@ -230,9 +239,9 @@ window.Room = (() => {
       <linearGradient id="beam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6d0" stop-opacity=".42"/><stop offset="1" stop-color="#fff6d0" stop-opacity="0"/></linearGradient>
       <linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101a3d"/><stop offset="1" stop-color="#2b3f7a"/></linearGradient>
       <linearGradient id="moonbeam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#bcd4ff" stop-opacity=".28"/><stop offset="1" stop-color="#bcd4ff" stop-opacity="0"/></linearGradient>
-      <radialGradient id="warm" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#ffd27a" stop-opacity=".22"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
+      <radialGradient id="warm" gradientUnits="userSpaceOnUse" cx="800" cy="560" r="980"><stop offset="0" stop-color="#ffd27a" stop-opacity=".22"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
       <clipPath id="winClip"><circle cx="330" cy="250" r="74"/></clipPath>
-      <clipPath id="floorClip"><rect x="-60" y="${HZ}" width="1720" height="520"/></clipPath>
+      <clipPath id="floorClip"><rect x="-2000" y="${HZ}" width="5600" height="${FB}"/></clipPath>
       <filter id="glow" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="6"/></filter>
     </defs>`;
   }
@@ -295,11 +304,13 @@ window.Room = (() => {
   }
 
   function build() {
-    document.getElementById('bg').innerHTML = defs()
-      + `<g id="far">${wall()}${ceilingBranch()}${windowEl()}${bookshelf()}${wallDecor()}</g>`
-      + `<g id="mid">${floor()}${plant()}${rug()}${pouf()}${lightBeam()}<rect width="1600" height="1000" fill="url(#warm)"/></g>`;
-    document.getElementById('fg').innerHTML = `<defs><filter id="glow2" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="6"/></filter></defs>`
-      + `<g id="lights">${fairyLights().replace(/url\(#glow\)/g, 'url(#glow2)')}</g><g id="front">${trunk('L')}${trunk('R')}</g>`;
+    const wires = fairyLights();
+    document.getElementById('bgFar').innerHTML = defs()
+      + `<g id="far">${wall()}${ceilingBranch()}${windowEl()}${bookshelf()}${wallDecor()}</g>`;
+    document.getElementById('bgMid').innerHTML = `<g id="mid">${floor()}${plant()}<g id="rugG">${rug()}</g>${pouf()}<rect x="-2000" y="-900" width="5600" height="3600" fill="url(#warm)" pointer-events="none"/></g>`;
+    document.getElementById('fg').innerHTML = `<g id="wires">${wires}</g><g id="front">${trunk('L')}${trunk('R')}</g>`;
+    document.getElementById('fxIn').innerHTML = effects();
+    document.getElementById('lightsIn').innerHTML = bulbsHTML() + '<i id="screenGlow" class="screen-glow"></i>';
     document.querySelector('#bmo .bmo-body').innerHTML = bmoBody();
   }
 

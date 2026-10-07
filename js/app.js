@@ -195,9 +195,17 @@
   const SLOTS = [[-.40, .08], [.40, .08], [-.63, .52], [.63, .52], [-.37, .88], [.37, .88], [-.88, .22], [.88, .22], [-.86, .96], [.86, .96]];
   function layout() {
     const vw = innerWidth, vh = innerHeight;
-    const Sc = Math.max(vw / W, vh / H), ox = (vw - W * Sc) / 2, oy = (vh - H * Sc) / 2;
+    // Kamera: yatay ekranda oda ekranı doldurur; dikey ekranda (telefon) odanın ~1000 birimlik genişliği gösterilir,
+    // zemin ve tavan yukarı/aşağı uzatılmış olarak çizildiği için boşluk kalmaz.
+    let Sc, x0c, y0c;
+    if (vw / vh >= 1) { Sc = Math.max(vw / W, vh / H); x0c = (W - vw / Sc) / 2; y0c = (H - vh / Sc) / 2; }
+    else { Sc = vw / 1000; x0c = 250; y0c = -(80 / Sc); }
+    const ox = -x0c * Sc, oy = -y0c * Sc;
     st.view = { S: Sc, ox, oy };
-    stage.style.transform = `translate(${ox}px,${oy}px) scale(${Sc})`;
+    const vb = `${x0c.toFixed(2)} ${y0c.toFixed(2)} ${(vw / Sc).toFixed(2)} ${(vh / Sc).toFixed(2)}`;
+    ['bgFar', 'bgMid', 'fg'].forEach(id => document.getElementById(id).setAttribute('viewBox', vb));
+    const tr = `translate(${ox}px,${oy}px) scale(${Sc})`;
+    stage.style.transform = tr; $('#fx').style.transform = tr; $('#lights').style.transform = tr;
     const x0 = -ox / Sc, x1 = (vw - ox) / Sc, y0 = -oy / Sc, y1 = (vh - oy) / Sc, vwD = x1 - x0;
     const dTop = (dialog.getBoundingClientRect().top - oy) / Sc;
     const hudB = y0 + 92 / Sc;
@@ -216,10 +224,10 @@
       }
     } else {
       const cols = n <= 4 ? 2 : n <= 6 ? 3 : 4, rows = Math.ceil(n / cols);
-      const cw = (vwD - 24) / cols, cs = Math.min(.85, cw / 130 * .86), rowH = 160 * cs + 22;
+      const cw = (vwD - 40) / cols, cs = Math.min(1.75, cw / 130 * .8), rowH = 160 * cs + 34;
       const bottom = dTop - 16;
       const firstTop = bottom - rows * rowH;
-      let bs = Math.min(.9, (vwD - 30) / 360);
+      let bs = Math.min(1.45, (vwD - 60) / 360);
       const by = firstTop - 4;
       bs = Math.min(bs, (by - hudB) / 385);
       st.bp = { x: 800, y: by, s: bs };
@@ -231,6 +239,10 @@
     st.pos = pos;
     const { x, y, s } = st.bp;
     Object.assign(bmo.style, { left: x - 170 + 'px', top: y - 380 + 'px', transform: `scale(${s})`, zIndex: Math.round(y) });
+    // halı BMO'nun altında dursun; gece ekran ışığı da BMO'yu takip etsin
+    document.getElementById('rugG')?.setAttribute('transform', `translate(${x.toFixed(1)} ${(y + 55 * s).toFixed(1)}) scale(${s.toFixed(3)}) translate(-800 -745)`);
+    const sg = local2stage(160, 112), glow = document.getElementById('screenGlow');
+    if (glow) Object.assign(glow.style, { left: sg.x + 'px', top: sg.y + 'px', transform: `scale(${s})` });
     st.carts.forEach((c, i) => {
       const p = pos[i];
       Object.assign(c.style, { left: p.x + 'px', top: p.y + 'px', zIndex: Math.round(p.y) });
@@ -561,8 +573,8 @@
     setMood('grin', true);
     S.zoomIn();
     const r = screenEl.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    world.style.transformOrigin = `${cx}px ${cy}px`;
-    zoomAnim = world.animate([{ transform: 'none', filter: 'brightness(1)' }, { transform: `translate(${innerWidth / 2 - cx}px,${innerHeight / 2 - cy}px) scale(1.9)`, filter: 'brightness(.7)' }],
+    world.style.transformOrigin = `${cx}px ${cy}px`; world.classList.add('zooming');
+    zoomAnim = world.animate([{ transform: 'none' }, { transform: `translate(${innerWidth / 2 - cx}px,${innerHeight / 2 - cy}px) scale(1.9)` }],
       { duration: T(800), easing: PORTAL_EASE, fill: 'forwards' });
     portal = document.createElement('div'); portal.className = 'portal';
     portal.innerHTML = `<div class="portal-title">${esc(p.name.toUpperCase())}</div>`;
@@ -586,7 +598,7 @@
     await portal.animate([{ transform: 'none', borderRadius: '0px', opacity: 1 }, { transform: portalFrom, borderRadius: '40px', opacity: 1 }], { duration: T(700), easing: PORTAL_EASE, fill: 'forwards' }).finished;
     await zoomAnim.finished;
     portal.remove(); portal = null;
-    zoomAnim.cancel(); zoomAnim = null;
+    zoomAnim.cancel(); zoomAnim = null; world.classList.remove('zooming');
     face.classList.remove('happy');
     st.mode = 'room'; st.busy = false;
     say(pickOne(['Geri döndük! Eğlenceliydi.', 'Of, çok güzeldi!', 'Başka bir kaset deneyelim mi?']));
@@ -610,8 +622,8 @@
     plant: ['Bitkiye su verdim! Büyü küçük bitki, büyü!', 'Bu bitkinin adı Bitki. Yaratıcı, değil mi?'],
     pouf: ['Burası benim şekerleme köşem. Zzz…', 'Yumuşacık! Ama kasetler daha eğlenceli.'],
   };
-  $('#bg').addEventListener('click', e => {
-    const h = e.target.closest('.hot'); if (!h) return;
+  document.addEventListener('click', e => {
+    const h = e.target.closest?.('.hot'); if (!h) return;
     e.stopPropagation(); st.lastInput = performance.now();
     if (st.mode === 'asleep') return wake();
     if (st.mode !== 'room') return;
@@ -690,7 +702,8 @@
   });
 
   /* ================= ANİMASYON DÖNGÜSÜ ================= */
-  const far = () => document.getElementById('far'), front = () => document.getElementById('front'), lights = () => document.getElementById('lights');
+  const parEls = { far: $('#bgFar'), fx: $('#fxIn'), fg: $('#fg'), li: $('#lightsIn') };
+  let lastEye = '', lastPar = '';
   const IDLE = ['Kaseti tutup bana sürükleyebilirsin, biliyor muydun?', 'Pencereye tıkla, gece olsun!', 'Odadaki eşyalara tıklamayı dene!', 'Altın kaseti gördün mü? Çok özel o!', 'Psst… kasetlerin üstüne gelince eğiliyorlar, fark ettin mi?', 'Sıkıldım… Hadi bir kaset tak!', 'M tuşuna basarsan müzik çalarım!',
     'Ok tuşlarıyla kasetler arasında gezebilirsin.', 'Biliyor musun? Ben de bir oyun konsoluyum!', 'Bip bop. Kasetler beni bekliyor…'];
   function loop(now) {
@@ -708,13 +721,19 @@
       }
     }
     st.eye.x += (tx - st.eye.x) * .15; st.eye.y += (ty - st.eye.y) * .15;
-    eyes.setAttribute('transform', `translate(${st.eye.x.toFixed(2)} ${st.eye.y.toFixed(2)})`);
-    // paralaks
-    if (!reduced) {
+    const eyeT = `translate(${st.eye.x.toFixed(1)} ${st.eye.y.toFixed(1)})`;
+    if (eyeT !== lastEye) { lastEye = eyeT; eyes.setAttribute('transform', eyeT); }
+    // paralaks (dokunmatik cihazlarda kapalı)
+    if (!reduced && !touch) {
       const p = st.par; p.x += (p.tx - p.x) * .06; p.y += (p.ty - p.y) * .06;
-      far()?.setAttribute('transform', `translate(${(-p.x * 16).toFixed(2)} ${(-p.y * 8).toFixed(2)})`);
-      front()?.setAttribute('transform', `translate(${(-p.x * 40).toFixed(2)} ${(-p.y * 14).toFixed(2)})`);
-      lights()?.setAttribute('transform', `translate(${(-p.x * 28).toFixed(2)} ${(-p.y * 10).toFixed(2)})`);
+      const key = p.x.toFixed(3) + p.y.toFixed(3);
+      if (key !== lastPar) {
+        lastPar = key; const S2 = st.view.S;
+        parEls.far.style.transform = `translate(${(-p.x * 16 * S2).toFixed(1)}px,${(-p.y * 8 * S2).toFixed(1)}px)`;
+        parEls.fx.style.transform = `translate(${(-p.x * 16).toFixed(1)}px,${(-p.y * 8).toFixed(1)}px)`;
+        parEls.fg.style.transform = `translate(${(-p.x * 40 * S2).toFixed(1)}px,${(-p.y * 14 * S2).toFixed(1)}px)`;
+        parEls.li.style.transform = `translate(${(-p.x * 28).toFixed(1)}px,${(-p.y * 10).toFixed(1)}px)`;
+      }
     }
     // boşta konuşma
     if (st.mode === 'room' && !st.busy && !typing && now - st.lastInput > 24000) {
@@ -734,7 +753,8 @@
     hint('asleep');
     say('Zzz… BMO uyuyor. (Uyandırmak için tıkla ya da bir tuşa bas)', { talk: false, speed: 30 });
     layout();
-    addEventListener('resize', layout);
+    let lastSize = '';
+    addEventListener('resize', () => { const k = innerWidth + 'x' + innerHeight; if (k !== lastSize) { lastSize = k; layout(); } });
     requestAnimationFrame(loop);
     st.projects = await loadProjects();
     try { await document.fonts.load('8px "Press Start 2P"'); } catch (e) { }
