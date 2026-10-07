@@ -14,6 +14,8 @@ window.CONFIG = {
   // Kapak görseli verilmezse BMO her proje için piksel-art kapak çizer.
   overrides: {
     // mesai: { cover: 'img/mesai.png', demo: 'https://...', desc: 'Mesai takip uygulaması' },
+    // Gerçek ek istatistiklerin varsa (indirme, kullanıcı vb.) proje sayfasında gösterilir:
+    // mesai: { stats: [['Kullanıcı', '120'], ['İndirme', '450']] },
   },
 
   // GitHub API'ye ulaşılamazsa gösterilecek kasetler

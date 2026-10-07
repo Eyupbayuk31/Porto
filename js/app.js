@@ -413,7 +413,13 @@
     $('#pCart').textContent = 'KASET: ' + p.name.toUpperCase();
     $('#pTitle').textContent = p.name;
     $('#pDesc').textContent = p.desc || 'Bu kasetin henüz bir açıklaması yok. Ama BMO yine de çok sevdi!';
-    const stats = [['Dil', p.lang ? `<i class="dot" style="background:${langColor(p.lang)}"></i>${esc(p.lang)}` : '—'], ['Yıldız', '★ ' + (p.stars || 0)], ['Fork', '⑂ ' + (p.forks || 0)], ['Son güncelleme', relDate(p.updated)]];
+    // Sıfır olan GitHub sayıları gösterilmez; config'teki gerçek ek istatistikler (ör. kullanıcı sayısı) eklenir.
+    const score = 3 + hash(p.name) % 3;
+    const stats = [['Dil', p.lang ? `<i class="dot" style="background:${langColor(p.lang)}"></i>${esc(p.lang)}` : '—'], ['Son güncelleme', relDate(p.updated)]];
+    if (p.stars) stats.push(['Yıldız', '★ ' + p.stars]);
+    if (p.forks) stats.push(['Fork', '⑂ ' + p.forks]);
+    (p.stats || []).forEach(([k, v]) => stats.push([esc(k), esc(v)]));
+    if (stats.length % 2) stats.push(['BMO puanı', '<span class="bmo-score">' + '★'.repeat(score) + '☆'.repeat(5 - score) + '</span>']);
     $('#pStats').innerHTML = stats.map(([k, v]) => `<li><span>${k}</span><b>${v}</b></li>`).join('');
     $('#pTopics').innerHTML = (p.topics || []).map(t => `<span>#${esc(t)}</span>`).join('');
     const repo = $('#pRepo'); repo.href = p.url;

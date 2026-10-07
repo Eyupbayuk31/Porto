@@ -228,3 +228,5 @@ body.in-panel .dialog { opacity: 0; transform: translate(-50%, 30px); pointer-ev
   background: var(--scr); display: grid; place-items: center; overflow: hidden; }
 .portal::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(30, 59, 58, .08) 0 2px, transparent 2px 4px); }
 .portal-title { font-family: var(--px); font-size: clamp(14px, 3vw, 34px); color: var(--ink); letter-spacing: 2px; opacity: .25; }
+
+.bmo-score { color: #e8a21a; letter-spacing: 2px; text-shadow: 1px 1px 0 var(--ink); }
